@@ -33,9 +33,57 @@
 
     <!-- ============================================================
          AGENTE DE IA (RELEVANCE AI) - BURBUJA DE CHAT
-         Agente: Santiago - asistente de pedidos del asador
+         Agente: asistente de pedidos del asador
          Color: burdeos #792108 | Sin pasos internos visibles
+         Conversacion nueva en cada visita | Sin subtitulo
          ============================================================ -->
+
+    <!-- 1. Borra la conversacion guardada para empezar de cero en cada visita -->
+    <script>
+      (function () {
+        try {
+          Object.keys(localStorage)
+            .filter(function (k) {
+              return /relevance|92510f70/i.test(k);
+            })
+            .forEach(function (k) {
+              localStorage.removeItem(k);
+            });
+          Object.keys(sessionStorage)
+            .filter(function (k) {
+              return /relevance|92510f70/i.test(k);
+            })
+            .forEach(function (k) {
+              sessionStorage.removeItem(k);
+            });
+        } catch (e) {}
+      })();
+    </script>
+
+    <!-- 2. Oculta el subtitulo de la conversacion ("Greeting Conversation") -->
+    <script>
+      window.addEventListener("load", function () {
+        var hideSubtitle = function () {
+          document
+            .querySelectorAll(".relevanceai-chat-bubble-app *")
+            .forEach(function (el) {
+              if (
+                el.childElementCount === 0 &&
+                /conversation/i.test(el.textContent.trim())
+              ) {
+                el.style.display = "none";
+              }
+            });
+        };
+        hideSubtitle();
+        new MutationObserver(hideSubtitle).observe(document.body, {
+          childList: true,
+          subtree: true,
+        });
+      });
+    </script>
+
+    <!-- 3. Burbuja del agente de Relevance AI -->
     <script
       defer
       data-relevanceai-share-id="d7b62b/3785c80b-2f7e-5958-8205-9ab0bb7ec662/92510f70-c129-4f37-95fc-0573522bc31a"

@@ -9,7 +9,6 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
-import { RESTAURANT } from "@/data/restaurant";
 
 export function CartDrawer() {
   const {
@@ -34,22 +33,22 @@ export function CartDrawer() {
 
     const total = totalPrice.toFixed(2).replace(".", ",");
 
-    const message = `Hola, quiero hacer este pedido desde la web:
+    const message = `Hola Jose, acabo de confirmar mi pedido desde la web:
 
 ${lines.join("\n")}
 
-Total: ${total} €
+💰 Total: ${total} €
 
-¿Me confirmáis a qué hora puedo recogerlo? ¡Gracias!`;
-
-    window.open(
-      `https://wa.me/${RESTAURANT.whatsappIntl}?text=${encodeURIComponent(message)}`,
-      "_blank",
-      "noopener,noreferrer",
-    );
+¿Podrías procesarlo y confirmarme cuando esté listo?`;
 
     clearCart();
     closeCart();
+
+    window.dispatchEvent(
+      new CustomEvent("jose-pending-message", {
+        detail: { message },
+      })
+    );
   };
 
   return (
@@ -77,70 +76,68 @@ Total: ${total} €
               </h2>
               <button
                 onClick={closeCart}
-                className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-ink/5"
+                className="rounded-full p-2 text-ink/60 transition-colors hover:bg-ink/5 hover:text-ink"
                 aria-label="Cerrar carrito"
               >
-                <X className="h-5 w-5 text-ink" />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-4">
               {items.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center gap-4 text-ink/40">
-                  <ChefHat className="h-16 w-16" />
-                  <p className="text-center font-medium">
-                    Tu carrito está vacío
+                <div className="flex h-full flex-col items-center justify-center text-center">
+                  <ChefHat className="mb-4 h-16 w-16 text-ink/20" />
+                  <p className="font-display text-xl text-ink/60">
+                    Tu pedido está vacío
                   </p>
-                  <button
-                    onClick={closeCart}
-                    className="rounded-full bg-primary px-6 py-2.5 font-display text-sm tracking-tight text-primary-foreground transition-colors hover:bg-primary/90"
-                  >
-                    Ver la carta
-                  </button>
+                  <p className="mt-2 text-sm text-ink/40">
+                    Añade algo rico de la carta
+                  </p>
                 </div>
               ) : (
                 <ul className="space-y-4">
                   {items.map((item) => (
                     <li
                       key={item.id}
-                      className="flex gap-4 rounded-xl bg-white p-4 shadow-sm"
+                      className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm"
                     >
                       <div className="min-w-0 flex-1">
-                        <h3 className="truncate font-semibold text-ink">
-                          {item.name}
-                        </h3>
-                        <p className="mt-0.5 font-display text-primary">
-                          {item.price}
+                        <p className="font-semibold text-ink">{item.name}</p>
+                        <p className="text-sm text-primary">
+                          {(item.priceValue * item.quantity)
+                            .toFixed(2)
+                            .replace(".", ",")}{" "}
+                          €
                         </p>
                       </div>
-                      <div className="flex flex-col items-end gap-2">
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() =>
-                              updateQuantity(item.id, item.quantity - 1)
-                            }
-                            className="flex h-7 w-7 items-center justify-center rounded-full border border-ink/10 transition-colors hover:bg-ink/5"
-                          >
-                            <Minus className="h-3.5 w-3.5" />
-                          </button>
-                          <span className="w-6 text-center font-semibold text-ink">
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() =>
-                              updateQuantity(item.id, item.quantity + 1)
-                            }
-                            className="flex h-7 w-7 items-center justify-center rounded-full border border-ink/10 transition-colors hover:bg-ink/5"
-                          >
-                            <Plus className="h-3.5 w-3.5" />
-                          </button>
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() =>
+                            updateQuantity(item.id, item.quantity - 1)
+                          }
+                          className="flex h-8 w-8 items-center justify-center rounded-full bg-cream text-ink transition-colors hover:bg-secondary/40"
+                          aria-label="Quitar uno"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </button>
+                        <span className="w-6 text-center font-bold text-ink">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() =>
+                            updateQuantity(item.id, item.quantity + 1)
+                          }
+                          className="flex h-8 w-8 items-center justify-center rounded-full bg-cream text-ink transition-colors hover:bg-secondary/40"
+                          aria-label="Añadir uno"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
                         <button
                           onClick={() => removeItem(item.id)}
-                          className="flex items-center gap-1 text-xs text-red-500 transition-colors hover:text-red-600"
+                          className="ml-1 flex h-8 w-8 items-center justify-center rounded-full text-ink/40 transition-colors hover:bg-red-50 hover:text-red-600"
+                          aria-label="Eliminar"
                         >
-                          <Trash2 className="h-3 w-3" />
-                          Quitar
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     </li>
@@ -164,11 +161,11 @@ Total: ${total} €
                   className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-4 font-display text-base tracking-tight text-primary-foreground uppercase transition-colors hover:bg-primary/90"
                 >
                   <MessageCircle className="h-5 w-5" />
-                  Pedir por WhatsApp
+                  Enviar pedido a Jose
                 </button>
                 <p className="mt-3 text-center text-xs text-ink/40">
-                  El pedido se envía a nuestro WhatsApp y te confirmamos la
-                  hora de recogida
+                  El pedido se envía a nuestro asistente y te confirma la hora
+                  de recogida al momento
                 </p>
               </div>
             )}

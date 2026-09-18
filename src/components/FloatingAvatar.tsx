@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import ChatWidgetPanel from "@/components/ChatWidgetPanel";
 import { CHAT_AGENT_NAME } from "@/config/chatAgent";
-import logo from "@/assets/logo-nav.png";
+import logo from "@/assets/logo-chef-bubble.png";
 
 const CHAT_AGENT_ID = '92510f70-c129-4f37-95fc-0573522bc31a';
 const CHAT_STORAGE_KEY = `r-${CHAT_AGENT_ID}`;

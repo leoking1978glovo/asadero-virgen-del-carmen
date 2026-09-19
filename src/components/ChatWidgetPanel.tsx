@@ -200,7 +200,7 @@ const ChatWidgetPanel: React.FC<ChatWidgetPanelProps> = ({
           <p className="text-lg text-[#ef233c] text-center py-4 px-3 rounded-lg bg-[#f5f5f5]">{error}</p>
         )}
         {!isLoading && !error && messages.length === 0 && !pendingMessage && (
-          <p className="text-lg text-[#666666] text-center py-8">¡Hola! Soy {CHAT_AGENT_NAME}, el asistente virtual con inteligencia artificial del Asador Virgen del Carmen 👋 ¿Te ayudo con tu pedido?</p>
+          <p className="text-lg text-[#666666] text-center py-8">¡Hola! Soy {CHAT_AGENT_NAME}, el asistente virtual con ia del Asador Virgen del Carmen 👋 ¿Te ayudo con tu pedido?</p>
         )}
         {messages.map((message, index) => {
           const isUser = message.type === 'user-message';

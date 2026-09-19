@@ -11,7 +11,7 @@ import {
 const CHAT_AGENT_ID = '92510f70-c129-4f37-95fc-0573522bc31a';
 const CHAT_AGENT_PROJECT = '3785c80b-2f7e-5958-8205-9ab0bb7ec662';
 const CHAT_AGENT_REGION = 'd7b62b';
-const CHAT_AGENT_NAME = 'Jose';
+const CHAT_AGENT_NAME = 'Santiago';
 const CHAT_STORAGE_KEY = `r-${CHAT_AGENT_ID}`;
 
 type OptimisticUserMessage = {
@@ -200,7 +200,7 @@ const ChatWidgetPanel: React.FC<ChatWidgetPanelProps> = ({
           <p className="text-lg text-[#ef233c] text-center py-4 px-3 rounded-lg bg-[#f5f5f5]">{error}</p>
         )}
         {!isLoading && !error && messages.length === 0 && !pendingMessage && (
-          <p className="text-lg text-[#666666] text-center py-8">¡Hola! Soy {CHAT_AGENT_NAME} 👋 ¿Te ayudo con tu pedido?</p>
+          <p className="text-lg text-[#666666] text-center py-8">¡Hola! Soy {CHAT_AGENT_NAME}, el asistente virtual con inteligencia artificial del Asador Virgen del Carmen 👋 ¿Te ayudo con tu pedido?</p>
         )}
         {messages.map((message, index) => {
           const isUser = message.type === 'user-message';

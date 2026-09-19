@@ -51,8 +51,8 @@ export default function FloatingAvatar({
       setIsOpen(true);
       setIsMinimized(false);
     };
-    window.addEventListener("open-jose-chat", handleOpenChat);
-    return () => window.removeEventListener("open-jose-chat", handleOpenChat);
+    window.addEventListener("open-santiago-chat", handleOpenChat);
+    return () => window.removeEventListener("open-santiago-chat", handleOpenChat);
   }, []);
 
   // Escuchar pedidos del carrito
@@ -66,8 +66,8 @@ export default function FloatingAvatar({
         setIsMinimized(false);
       }
     };
-    window.addEventListener("jose-pending-message", handlePedido);
-    return () => window.removeEventListener("jose-pending-message", handlePedido);
+    window.addEventListener("santiago-pending-message", handlePedido);
+    return () => window.removeEventListener("santiago-pending-message", handlePedido);
   }, []);
 
   const handleAvatarClick = () => {
@@ -142,7 +142,7 @@ export default function FloatingAvatar({
                     <h3 className="font-display text-sm font-bold tracking-wide text-cream">{CHAT_AGENT_NAME}</h3>
                     <p className="flex items-center gap-1.5 text-xs text-cream/90">
                       <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                      En línea - Asistente de Pedidos
+                      Asistente virtual con IA
                     </p>
                   </div>
                 </div>

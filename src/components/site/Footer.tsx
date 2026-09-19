@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { Phone, MessageCircle } from "lucide-react";
 import { RESTAURANT } from "@/data/restaurant";
 
@@ -63,9 +64,22 @@ export function Footer() {
           </div>
         </div>
 
-        <p className="mt-14 text-xs tracking-widest text-cream/35 uppercase">
-          © {new Date().getFullYear()} Virgen del Carmen · Pollos Asados
-        </p>
+        <div className="mt-14 flex flex-col gap-4 border-t border-cream/15 pt-6 md:flex-row md:items-center md:justify-between">
+          <p className="text-xs tracking-widest text-cream/35 uppercase">
+            © {new Date().getFullYear()} Virgen del Carmen · Pollos Asados
+          </p>
+          <nav className="flex flex-wrap gap-x-6 gap-y-2 text-xs tracking-widest uppercase">
+            <Link to="/aviso-legal" className="text-cream/50 hover:text-cream transition-colors">
+              Aviso Legal
+            </Link>
+            <Link to="/privacidad" className="text-cream/50 hover:text-cream transition-colors">
+              Privacidad
+            </Link>
+            <Link to="/cookies" className="text-cream/50 hover:text-cream transition-colors">
+              Cookies
+            </Link>
+          </nav>
+        </div>
       </div>
     </footer>
   );

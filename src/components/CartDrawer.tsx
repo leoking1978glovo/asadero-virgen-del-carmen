@@ -67,10 +67,9 @@ export function CartDrawer() {
     }
   };
 
-  if (!isOpen) return null;
 
   return (
-    <div id="cart-drawer" onClick={handleClose}>
+    <div id="cart-drawer" onClick={handleClose} style={{ display: isOpen ? "block" : "none" }}>
       <aside id="panel" className="open" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
         <div className="header">
           <strong>Tu pedido</strong>

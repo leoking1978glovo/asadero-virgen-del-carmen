@@ -28,7 +28,8 @@ export function CartDrawer() {
   const [orderId, setOrderId] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const total = items.reduce((s, i) => s + Number(i.price) * i.quantity, 0);
+  const toNum = (v: unknown) => { const n = parseFloat(String(v ?? "").replace(",", ".")); return isNaN(n) ? 0 : n; };
+  const total = items.reduce((s, i) => s + toNum(i.price) * i.quantity, 0);
   const formatter = useMemo(() => new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }), []);
 
   const resetFlow = () => {
@@ -53,7 +54,7 @@ export function CartDrawer() {
     setSending(false);
     if (result.ok) { setOrderId(result.id ?? null); clearCart(); setStep("done"); }
     else if (result.error === "closed") { setErrorMsg("Ahora mismo no aceptamos pedidos online. Llámanos o pasa por el local."); }
-    else { setErrorMsg("No se pudo enviar. Revisa los datos o pide por WhatsApp."); }
+    else { setErrorMsg("Error: " + (result.error || "sin detalle")); }
   };
 
   return (
@@ -95,7 +96,7 @@ export function CartDrawer() {
                 <div key={i.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px dashed #e0d3c0" }}>
                   <div>
                     <div style={{ fontWeight: 700 }}>{i.name}</div>
-                    <div style={{ fontSize: 13, color: "#7a6a62" }}>{formatter.format(Number(i.price) * i.quantity)}</div>
+                    <div style={{ fontSize: 13, color: "#7a6a62" }}>{formatter.format(toNum(i.price) * i.quantity)}</div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <button onClick={() => updateQuantity(i.name, -1)} style={qtyBtn}>−</button>

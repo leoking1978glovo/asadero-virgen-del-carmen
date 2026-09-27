@@ -1,177 +1,249 @@
-import { motion, AnimatePresence } from "motion/react";
-import {
-  ShoppingCart,
-  X,
-  Plus,
-  Minus,
-  Trash2,
-  ChefHat,
-  MessageCircle,
-} from "lucide-react";
-import { useCart } from "@/lib/cart-context";
+import { useMemo, useState } from "react";
+import { useCart } from "../lib/cart-context";
+import { useLanguage } from "../lib/language-context";
+import { enviarPedidoTPV } from "../lib/tpv";
 
-export function CartDrawer() {
-  const {
-    items,
-    isOpen,
-    closeCart,
-    updateQuantity,
-    removeItem,
-    totalPrice,
-    clearCart,
-  } = useCart();
+const PICKUP_SLOTS: string[] = (() => {
+  const slots: string[] = [];
+  const ranges = [[11, 15], [19.5, 22.5]]; // 11:00-15:00 y 19:30-22:30
+  for (const [start, end] of ranges) {
+    for (let h = start; h < end; h += 0.25) {
+      const hh = Math.floor(h);
+      const mm = Math.round((h - hh) * 60).toString().padStart(2, "0");
+      slots.push(`${hh.toString().padStart(2, "0")}:${mm}`);
+    }
+  }
+  return slots;
+})();
 
-  const handlePedirAhora = () => {
-    if (items.length === 0) return;
+export default function CartDrawer() {
+  const { items, updateQuantity, clearCart, count, totalPrice, isOpen, closeCart } = useCart();
+  const { t } = useLanguage();
 
+  const [step, setStep] = useState<"cart" | "form" | "done">("cart");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [pickup, setPickup] = useState("Lo antes posible");
+  const [notes, setNotes] = useState("");
+  const [sending, setSending] = useState(false);
+  const [orderId, setOrderId] = useState<number | null>(null);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const formatter = useMemo(
+    () => new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }),
+    []
+  );
+
+  const buildWhatsAppMessage = () => {
     const lines = items.map(
-      (item) =>
-        `- ${item.name} x${item.quantity} = ${(item.priceValue * item.quantity)
-          .toFixed(2)
-          .replace(".", ",")} €`,
+      (i) => `• ${i.quantity} x ${i.name}${i.options?.length ? ` (${i.options.join(", ")})` : ""}`
     );
-
-    const total = totalPrice.toFixed(2).replace(".", ",");
-
-    const message = `Hola Jose, acabo de confirmar mi pedido desde la web:
-
-${lines.join("\n")}
-
-💰 Total: ${total} €
-
-¿Podrías procesarlo y confirmarme cuando esté listo?`;
-
-    clearCart();
-    closeCart();
-
-    window.dispatchEvent(
-      new CustomEvent("jose-pending-message", {
-        detail: { message },
-      })
+    return encodeURIComponent(
+      `Hola, quiero hacer un pedido para recoger:\n${lines.join("\n")}\nTotal: ${formatter.format(totalPrice)}`
     );
   };
 
+  const resetFlow = () => {
+    setStep("cart");
+    setName(""); setPhone(""); setPickup("Lo antes posible"); setNotes("");
+    setOrderId(null); setErrorMsg(""); setSending(false);
+  };
+
+  const handleClose = () => { resetFlow(); closeCart(); };
+
+  const submitOrder = async () => {
+    if (sending) return;
+    setSending(true); setErrorMsg("");
+    // Las opciones (ej. "sin cebolla") se añaden a notas; el nombre base debe existir en el TPV
+    const optsNotes = items
+      .filter((i) => i.options?.length)
+      .map((i) => `${i.name}: ${i.options!.join(", ")}`)
+      .join("; ");
+    const result = await enviarPedidoTPV({
+      name: name.trim(),
+      phone: phone.trim(),
+      type: "recogida",
+      pickup,
+      notes: [notes.trim(), optsNotes].filter(Boolean).join(" | "),
+      items: items.map((i) => ({ name: i.name, qty: i.quantity })),
+    });
+    setSending(false);
+    if (result.ok) {
+      setOrderId(result.id ?? null);
+      clearCart();
+      setStep("done");
+    } else if (result.error === "closed") {
+      setErrorMsg("En este momento no aceptamos pedidos online. Llámanos o pasa por el local.");
+    } else {
+      setErrorMsg("No se pudo enviar el pedido. Revisa los datos o prueba por WhatsApp.");
+    }
+  };
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-[90] flex justify-end">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={closeCart}
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-          />
-          <motion.div
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 28, stiffness: 280 }}
-            className="relative flex h-full w-full max-w-md flex-col bg-cream shadow-2xl"
-          >
-            <div className="flex items-center justify-between border-b border-ink/10 px-6 py-5">
-              <h2 className="flex items-center gap-3 font-display text-2xl tracking-tight text-ink">
-                <ShoppingCart className="h-6 w-6 text-primary" />
-                Tu pedido
-              </h2>
-              <button
-                onClick={closeCart}
-                className="rounded-full p-2 text-ink/60 transition-colors hover:bg-ink/5 hover:text-ink"
-                aria-label="Cerrar carrito"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+    <>
+      <div
+        id="cart-drawer"
+        aria-hidden={!isOpen}
+        onClick={handleClose}
+        style={{ pointerEvents: isOpen ? "auto" : "none" }}
+      >
+        <aside
+          id="panel"
+          className={isOpen ? "open" : ""}
+          onClick={(e) => e.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("cart.title")}
+        >
+          <div className="header">
+            <strong>{t("cart.title")}</strong>
+            <button className="close" onClick={handleClose} aria-label={t("cart.close")}>✕</button>
+          </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-4">
-              {items.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center text-center">
-                  <ChefHat className="mb-4 h-16 w-16 text-ink/20" />
-                  <p className="font-display text-xl text-ink/60">
-                    Tu pedido está vacío
-                  </p>
-                  <p className="mt-2 text-sm text-ink/40">
-                    Añade algo rico de la carta
-                  </p>
-                </div>
-              ) : (
-                <ul className="space-y-4">
-                  {items.map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-ink">{item.name}</p>
-                        <p className="text-sm text-primary">
-                          {(item.priceValue * item.quantity)
-                            .toFixed(2)
-                            .replace(".", ",")}{" "}
-                          €
-                        </p>
+          {/* PASO 1: carrito */}
+          {step === "cart" && (
+            <>
+              <div id="items">
+                {items.length === 0 && <p className="empty">{t("cart.empty")}</p>}
+                {items.map((i) => {
+                  const key = `${i.name}-${JSON.stringify(i.options || [])}`;
+                  return (
+                    <div key={key} className="item">
+                      <div className="item-info">
+                        <strong>{i.name}</strong>
+                        {i.options?.length ? <small>{i.options.join(", ")}</small> : null}
+                        <span>{formatter.format(i.price * i.quantity)}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() =>
-                            updateQuantity(item.id, item.quantity - 1)
-                          }
-                          className="flex h-8 w-8 items-center justify-center rounded-full bg-cream text-ink transition-colors hover:bg-secondary/40"
-                          aria-label="Quitar uno"
-                        >
-                          <Minus className="h-4 w-4" />
-                        </button>
-                        <span className="w-6 text-center font-bold text-ink">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() =>
-                            updateQuantity(item.id, item.quantity + 1)
-                          }
-                          className="flex h-8 w-8 items-center justify-center rounded-full bg-cream text-ink transition-colors hover:bg-secondary/40"
-                          aria-label="Añadir uno"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => removeItem(item.id)}
-                          className="ml-1 flex h-8 w-8 items-center justify-center rounded-full text-ink/40 transition-colors hover:bg-red-50 hover:text-red-600"
-                          aria-label="Eliminar"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                      <div className="item-qty">
+                        <button onClick={() => updateQuantity(key, -1)} aria-label={t("cart.decrease")}>−</button>
+                        <b>{i.quantity}</b>
+                        <button onClick={() => updateQuantity(key, +1)} aria-label={t("cart.increase")}>+</button>
                       </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            {items.length > 0 && (
-              <div className="border-t border-ink/10 bg-white px-6 py-5">
-                <div className="flex items-center justify-between">
-                  <span className="font-display text-lg tracking-tight text-ink">
-                    Total
-                  </span>
-                  <span className="font-display text-2xl text-primary">
-                    {totalPrice.toFixed(2).replace(".", ",")} €
-                  </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div id="cart-footer">
+                <div className="total-row">
+                  <span>{t("cart.total")}</span>
+                  <strong>{formatter.format(totalPrice)}</strong>
                 </div>
                 <button
-                  onClick={handlePedirAhora}
-                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-primary py-4 font-display text-base tracking-tight text-primary-foreground uppercase transition-colors hover:bg-primary/90"
+                  className="primary"
+                  disabled={items.length === 0}
+                  onClick={() => setStep("form")}
+                  style={{ width: "100%", marginBottom: 8 }}
                 >
-                  <MessageCircle className="h-5 w-5" />
-                  Enviar pedido a Jose
+                  🛍️ Pedir online (recogida)
                 </button>
-                <p className="mt-3 text-center text-xs text-ink/40">
-                  El pedido se envía a nuestro asistente y te confirma la hora
-                  de recogida al momento
-                </p>
+                <a
+                  id="whatsapp-cart-btn"
+                  className="wa"
+                  target="_blank"
+                  rel="noreferrer"
+                  href={`https://wa.me/?text=${buildWhatsAppMessage()}`}
+                >
+                  {t("cart.whatsapp")}
+                </a>
               </div>
-            )}
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
+            </>
+          )}
+
+          {/* PASO 2: datos del pedido online */}
+          {step === "form" && (
+            <div id="items" style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+              <h3 style={{ margin: 0 }}>Datos para tu pedido</h3>
+              <input
+                placeholder="Tu nombre *"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                style={{ padding: 12, borderRadius: 10, border: "2px solid #ece4da", fontSize: 14 }}
+              />
+              <input
+                placeholder="Teléfono *"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                style={{ padding: 12, borderRadius: 10, border: "2px solid #ece4da", fontSize: 14 }}
+              />
+              <label style={{ fontSize: 13, fontWeight: 600 }}>Hora de recogida</label>
+              <select
+                value={pickup}
+                onChange={(e) => setPickup(e.target.value)}
+                style={{ padding: 12, borderRadius: 10, border: "2px solid #ece4da", fontSize: 14 }}
+              >
+                <option>Lo antes posible</option>
+                {PICKUP_SLOTS.map((s) => <option key={s}>{s}</option>)}
+              </select>
+              <textarea
+                placeholder="Notas (opcional)"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={2}
+                style={{ padding: 12, borderRadius: 10, border: "2px solid #ece4da", fontSize: 14, resize: "none" }}
+              />
+              <div className="total-row">
+                <span>{t("cart.total")}</span>
+                <strong>{formatter.format(totalPrice)}</strong>
+              </div>
+              <p style={{ fontSize: 12, color: "#7a6a62", margin: 0 }}>
+                Lo pagas al recoger en el local (efectivo o tarjeta)
+              </p>
+              {errorMsg && <p style={{ color: "#c0392b", fontSize: 13, margin: 0 }}>{errorMsg}</p>}
+              <button
+                className="primary"
+                disabled={!name.trim() || phone.trim().length < 6 || sending}
+                onClick={submitOrder}
+                style={{ padding: 14, fontWeight: 700 }}
+              >
+                {sending ? "Enviando…" : "✅ Confirmar pedido"}
+              </button>
+              <button onClick={() => setStep("cart")} style={{ background: "none", border: "none", color: "#7a6a62", cursor: "pointer" }}>
+                ← Volver al carrito
+              </button>
+            </div>
+          )}
+
+          {/* PASO 3: confirmación */}
+          {step === "done" && (
+            <div style={{ padding: 24, textAlign: "center", marginTop: 40 }}>
+              <div style={{ fontSize: 52 }}>🎉</div>
+              <h3>¡Pedido confirmado!</h3>
+              <p style={{ color: "#7a6a62" }}>
+                Tu pedido <strong>{orderId ? `#${orderId}` : ""}</strong> está en cocina.
+                Págalo al recoger en el local.
+              </p>
+              <button className="primary" onClick={handleClose} style={{ padding: 12, fontWeight: 700 }}>
+                Cerrar
+              </button>
+            </div>
+          )}
+        </aside>
+      </div>
+
+      <button
+        id="cart-count-badge"
+        aria-label={t("cart.open")}
+        onClick={() => { resetFlow(); closeCart(); window.dispatchEvent(new CustomEvent("open-cart")); }}
+      >
+        🛒 {count}
+      </button>
+
+      <style>{`
+        #cart-count-badge {
+          position: fixed; right: 18px; bottom: 18px; z-index: 60;
+          border: none; border-radius: 999px; padding: 12px 18px;
+          background: #7a1d0e; color: #fff; font-weight: 700; cursor: pointer;
+          box-shadow: 0 8px 24px rgba(0,0,0,.25);
+        }
+        #cart-drawer .primary {
+          background: #7a1d0e; color: #fff; border: none; border-radius: 12px;
+          padding: 12px; cursor: pointer; font-size: 15px;
+        }
+        #cart-drawer .primary:disabled { opacity: .4; cursor: not-allowed; }
+        #cart-drawer input:focus, #cart-drawer select:focus, #cart-drawer textarea:focus {
+          outline: none; border-color: #b4701b !important;
+        }
+      `}</style>
+    </>
   );
 }

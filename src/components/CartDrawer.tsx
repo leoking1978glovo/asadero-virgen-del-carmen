@@ -1,5 +1,4 @@
 import { useMemo, useState, type CSSProperties } from "react";
-import { useMemo, useState } from "react";
 import { useCart } from "../lib/cart-context";
 import { enviarPedidoTPV } from "../lib/tpv";
 

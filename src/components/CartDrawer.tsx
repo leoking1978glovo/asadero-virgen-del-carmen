@@ -16,6 +16,8 @@ const PICKUP_SLOTS: string[] = (() => {
 })();
 
 const inp: CSSProperties = { padding: 12, borderRadius: 10, border: "2px solid #e8d9c3", fontSize: 14, width: "100%", boxSizing: "border-box" };
+const qtyBtn: CSSProperties = { width: 30, height: 30, borderRadius: 8, border: "2px solid #e0d3c0", background: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer", color: "#792108" };
+const primary: CSSProperties = { background: "#792108", color: "#fff", border: "none", borderRadius: 12, padding: "13px", cursor: "pointer", fontSize: 15, fontWeight: 700, width: "100%" };
 
 export function CartDrawer() {
   const { items, updateQuantity, clearCart, isOpen, closeCart } = useCart();
@@ -28,8 +30,7 @@ export function CartDrawer() {
   const [orderId, setOrderId] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const toNum = (v: unknown) => { const n = parseFloat(String(v ?? "").replace(",", ".")); return isNaN(n) ? 0 : n; };
-  const total = items.reduce((s, i) => s + toNum(i.price) * i.quantity, 0);
+  const total = items.reduce((s, i) => s + i.priceValue * i.quantity, 0);
   const formatter = useMemo(() => new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }), []);
 
   const resetFlow = () => {
@@ -47,14 +48,23 @@ export function CartDrawer() {
     if (sending) return;
     setSending(true); setErrorMsg("");
     const result = await enviarPedidoTPV({
-      name: name.trim(), phone: phone.trim(), type: "recogida",
-      pickup, notes: notes.trim(),
+      name: name.trim(),
+      phone: phone.trim(),
+      type: "recogida",
+      pickup,
+      notes: notes.trim(),
       items: items.map((i) => ({ name: i.name, qty: i.quantity })),
     });
     setSending(false);
-    if (result.ok) { setOrderId(result.id ?? null); clearCart(); setStep("done"); }
-    else if (result.error === "closed") { setErrorMsg("Ahora mismo no aceptamos pedidos online. Llámanos o pasa por el local."); }
-    else { setErrorMsg("Error: " + (result.error || "sin detalle")); }
+    if (result.ok) {
+      setOrderId(result.id ?? null);
+      clearCart();
+      setStep("done");
+    } else if (result.error === "closed") {
+      setErrorMsg("Ahora mismo no aceptamos pedidos online. Llámanos o pasa por el local.");
+    } else {
+      setErrorMsg("Error: " + (result.error || "sin detalle"));
+    }
   };
 
   return (
@@ -93,15 +103,15 @@ export function CartDrawer() {
             <div style={{ flex: 1, overflowY: "auto", padding: "12px 18px" }}>
               {items.length === 0 && <p style={{ color: "#7a6a62" }}>El carrito está vacío</p>}
               {items.map((i) => (
-                <div key={i.name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px dashed #e0d3c0" }}>
+                <div key={i.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px dashed #e0d3c0" }}>
                   <div>
                     <div style={{ fontWeight: 700 }}>{i.name}</div>
-                    <div style={{ fontSize: 13, color: "#7a6a62" }}>{formatter.format(toNum(i.price) * i.quantity)}</div>
+                    <div style={{ fontSize: 13, color: "#7a6a62" }}>{formatter.format(i.priceValue * i.quantity)}</div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <button onClick={() => updateQuantity(i.name, -1)} style={qtyBtn}>−</button>
+                    <button onClick={() => updateQuantity(i.id, i.quantity - 1)} style={qtyBtn}>−</button>
                     <b>{i.quantity}</b>
-                    <button onClick={() => updateQuantity(i.name, +1)} style={qtyBtn}>+</button>
+                    <button onClick={() => updateQuantity(i.id, i.quantity + 1)} style={qtyBtn}>+</button>
                   </div>
                 </div>
               ))}
@@ -165,8 +175,5 @@ export function CartDrawer() {
     </div>
   );
 }
-
-const qtyBtn: CSSProperties = { width: 30, height: 30, borderRadius: 8, border: "2px solid #e0d3c0", background: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer", color: "#792108" };
-const primary: CSSProperties = { background: "#792108", color: "#fff", border: "none", borderRadius: 12, padding: "13px", cursor: "pointer", fontSize: 15, fontWeight: 700, width: "100%" };
 
 export default CartDrawer;

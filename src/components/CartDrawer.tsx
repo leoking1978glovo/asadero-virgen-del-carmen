@@ -1,3 +1,4 @@
+import { useMemo, useState, type CSSProperties } from "react";
 import { useMemo, useState } from "react";
 import { useCart } from "../lib/cart-context";
 import { enviarPedidoTPV } from "../lib/tpv";
@@ -26,7 +27,6 @@ export function CartDrawer() {
   const [orderId, setOrderId] = useState<number | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const count = items.reduce((s, i) => s + i.quantity, 0);
   const total = items.reduce((s, i) => s + Number(i.price) * i.quantity, 0);
 
   const formatter = useMemo(
@@ -154,6 +154,6 @@ export function CartDrawer() {
   );
 }
 
-const inp: React.CSSProperties = { padding: 12, borderRadius: 10, border: "2px solid #ece4da", fontSize: 14 };
+const inp: CSSProperties = { padding: 12, borderRadius: 10, border: "2px solid #ece4da", fontSize: 14 };
 
 export default CartDrawer;

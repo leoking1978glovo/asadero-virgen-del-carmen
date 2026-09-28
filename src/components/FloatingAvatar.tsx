@@ -52,7 +52,7 @@ export default function FloatingAvatar({
       setIsMinimized(false);
     };
     window.addEventListener("open-jose-chat", handleOpenChat);
-    return () => window.removeEventListener("open-santiago-chat", handleOpenChat);
+    return () => window.removeEventListener("open-jose-chat", handleOpenChat);
   }, []);
 
   // Escuchar pedidos del carrito
@@ -66,8 +66,8 @@ export default function FloatingAvatar({
         setIsMinimized(false);
       }
     };
-    window.addEventListener("santiago-pending-message", handlePedido);
-    return () => window.removeEventListener("santiago-pending-message", handlePedido);
+    window.addEventListener("jose-pending-message", handlePedido);
+    return () => window.removeEventListener("jose-pending-message", handlePedido);
   }, []);
 
   const handleAvatarClick = () => {

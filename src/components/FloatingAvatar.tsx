@@ -51,7 +51,7 @@ export default function FloatingAvatar({
       setIsOpen(true);
       setIsMinimized(false);
     };
-    window.addEventListener("open-santiago-chat", handleOpenChat);
+    window.addEventListener("open-jose-chat", handleOpenChat);
     return () => window.removeEventListener("open-santiago-chat", handleOpenChat);
   }, []);
 
